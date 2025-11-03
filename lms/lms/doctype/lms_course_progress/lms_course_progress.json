@@ -15,7 +15,8 @@
   "section_break_uoob",
   "is_scorm_chapter",
   "column_break_wskp",
-  "scorm_content"
+  "scorm_content",
+  "scorm_raw_score"
  ],
  "fields": [
   {
@@ -96,6 +97,12 @@
    "fieldname": "scorm_content",
    "fieldtype": "Long Text",
    "label": "SCORM Content",
+   "read_only": 1
+  },
+ {
+   "fieldname": "scorm_raw_score",
+   "fieldtype": "Long Text",
+   "label": "SCORM Raw Score",
    "read_only": 1
   }
  ],

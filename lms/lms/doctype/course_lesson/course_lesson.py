@@ -87,6 +87,7 @@ def save_progress(lesson, course, scorm_details=None):
                 "status": "Complete" if getattr(scorm_details, "is_complete", False) or lesson_already_completed else "Partially Complete",
 				"member": frappe.session.user,
                 "scorm_content": getattr(scorm_details, "scorm_content", None),
+				"scorm_raw_score": getattr(scorm_details, "scorm_raw_score", None),
 			}
 		).save(ignore_permissions=True)
 	elif scorm_details and progress_already_exists:
@@ -99,6 +100,9 @@ def save_progress(lesson, course, scorm_details=None):
 		scorm_content = getattr(scorm_details, "scorm_content", None)
 		if scorm_content is not None:
 			update_dict["scorm_content"] = scorm_content
+		scorm_raw_score = getattr(scorm_details, "scorm_raw_score", None)
+		if scorm_raw_score is not None:
+			update_dict["scorm_raw_score"] = scorm_raw_score
 		frappe.db.set_value(
 			"LMS Course Progress",
 			progress_already_exists,

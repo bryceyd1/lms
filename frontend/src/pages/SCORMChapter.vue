@@ -103,6 +103,8 @@ const getDataFromLMS = (key) => {
 		return progress.data?.scorm_content || ''
 	} else if (key === 'cmi.suspend_data') {
 		return progress.data?.scorm_content || ''
+	} else if (key === 'cmi.core.score.raw') {
+		return progress.data?.scorm_raw_score || ''
 	}
 	return ''
 }
@@ -131,6 +133,11 @@ const saveDataToLMS = (key, value) => {
 		debouncedSaveProgress({
 			is_complete: isSuccessfullyCompleted.value,
 			scorm_content: value,
+		})
+	} else if (key === 'cmi.score.raw') {
+		debouncedSaveProgress({
+			is_complete: isSuccessfullyCompleted.value,
+			scorm_raw_score: value,
 		})
 	}
 }
