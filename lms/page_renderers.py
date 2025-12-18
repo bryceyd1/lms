@@ -33,7 +33,7 @@ class SCORMRenderer(BaseRenderer):
 			    "object-src 'none'; "
 			    "base-uri 'self'; "
 			    "form-action 'self'; "
-			    "frame-ancestors 'none'; "
+			    # "frame-ancestors 'none'; "
 			    "frame-src https:; "  # Allow HTTPS iframes (YouTube, Vimeo, etc.)
 			)
 			
