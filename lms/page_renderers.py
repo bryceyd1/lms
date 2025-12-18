@@ -33,8 +33,6 @@ class SCORMRenderer(BaseRenderer):
 			    "object-src 'none'; "
 			    "base-uri 'self'; "
 			    "form-action 'self'; "
-			    # "frame-ancestors 'none'; "
-			    "frame-src https: http://localhost;"  # Allow HTTPS iframes and localhost for dev
 			)
 			
 			# Additional security headers
