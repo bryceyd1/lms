@@ -108,6 +108,8 @@ const sanitizeInput = (value) => {
 const isValidSCORMKey = (key) => {
 	const validKeys = [
 		'cmi.core.lesson_status',
+		'cmi.core.lesson_mode',      // ADD THIS - needed for initialization
+		'cmi.core.exit',              // ADD THIS - needed for initialization
 		'cmi.launch_data',
 		'cmi.suspend_data',
 		'cmi.core.score.raw',
@@ -119,7 +121,7 @@ const isValidSCORMKey = (key) => {
 	]
 	
 	// Allow keys with array indices like cmi.interactions.0.id
-	const keyPattern = /^cmi\.(core\.)?(lesson_status|launch_data|suspend_data|score\.raw|lesson_location|session_time|interactions\.\d+\.\w+|objectives\.\d+\.\w+)$/
+	const keyPattern = /^cmi\.(core\.)?(lesson_status|lesson_mode|exit|launch_data|suspend_data|score\.raw|lesson_location|session_time|interactions\.\d+\.\w+|objectives\.\d+\.\w+)$/
 	
 	return validKeys.includes(key) || keyPattern.test(key)
 }
@@ -146,7 +148,6 @@ const enrollment = createListResource({
 })
 
 const getDataFromLMS = (key) => {
-	// SECURITY FIX: Validate key before processing
 	if (!isValidSCORMKey(key)) {
 		console.warn(`Invalid SCORM key attempted: ${key}`)
 		return ''
@@ -154,8 +155,9 @@ const getDataFromLMS = (key) => {
 	
 	if (key === 'cmi.core.lesson_status') {
 		return progress.data?.status === 'Complete' ? 'passed' : 'incomplete'
+	} else if (key === 'cmi.core.lesson_mode') {
+		return 'normal'
 	} else if (key === 'cmi.launch_data') {
-		// Return sanitized data
 		return sanitizeInput(progress.data?.scorm_content || '')
 	} else if (key === 'cmi.suspend_data') {
 		return sanitizeInput(progress.data?.scorm_content || '')
