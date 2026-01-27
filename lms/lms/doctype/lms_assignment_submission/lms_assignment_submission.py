@@ -28,7 +28,7 @@ class LMSAssignmentSubmission(Document):
 			)
 
 	def validate_url(self):
-		if self.type == "URL" and not validate_url(self.answer):
+		if self.type == "URL" and not validate_url(self.answer, True, ["http", "https"]):
 			frappe.throw(_("Please enter a valid URL."))
 
 	def validate_status(self):
@@ -64,16 +64,15 @@ class LMSAssignmentSubmission(Document):
 	def trigger_update_notification(self):
 		notification = frappe._dict(
 			{
-				"subject": _("There has been an update on your submission for assignment {0}").format(
-					self.assignment_title
+				"subject": _("The instructor has left a comment on your assignment {0}").format(
+					frappe.bold(self.assignment_title)
 				),
 				"email_content": self.comments,
 				"document_type": self.doctype,
 				"document_name": self.name,
-				"for_user": self.owner,
 				"from_user": self.evaluator,
 				"type": "Alert",
-				"link": f"/assignment-submission/{self.assignment}/{self.name}",
+				"link": f"/lms/assignment-submission/{self.assignment}/{self.name}",
 			}
 		)
 		make_notification_logs(notification, [self.member])

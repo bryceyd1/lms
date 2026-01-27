@@ -3,7 +3,49 @@
 		class="sticky flex items-center justify-between top-0 z-10 border-b bg-surface-white px-3 py-2.5 sm:px-5"
 	>
 		<Breadcrumbs :items="breadcrumbs" />
-		<router-link
+		<Dropdown
+			v-if="canCreateBatch()"
+			:options="[
+				{
+					label: __('New Batch'),
+					icon: 'users',
+					onClick() {
+						router.push({
+							name: 'BatchForm',
+							params: { batchName: 'new' },
+						})
+					},
+				},
+				{
+					label: __('Import Batch'),
+					icon: 'upload',
+					onClick() {
+						router.push({
+							name: 'NewDataImport',
+							params: { doctype: 'LMS Batch' },
+						})
+					},
+				},
+			]"
+		>
+			<template v-slot="{ open }">
+				<Button variant="solid">
+					<template #prefix>
+						<Plus class="h-4 w-4 stroke-1.5" />
+					</template>
+					{{ __('Create') }}
+					<template #suffix>
+						<ChevronDown
+							:class="[
+								'w-4 h-4 stroke-1.5 ml-1 transform transition-transform',
+								open ? 'rotate-180' : '',
+							]"
+						/>
+					</template>
+				</Button>
+			</template>
+		</Dropdown>
+		<!-- <router-link
 			v-if="canCreateBatch()"
 			:to="{
 				name: 'BatchForm',
@@ -16,7 +58,7 @@
 				</template>
 				{{ __('Create') }}
 			</Button>
-		</router-link>
+		</router-link> -->
 	</header>
 	<div class="p-5 pb-10">
 		<div
@@ -48,7 +90,7 @@
 							v-model="currentCategory"
 							:options="categories"
 							:placeholder="__('Category')"
-							@change="updateBatches()"
+							@update:modelValue="updateBatches()"
 						/>
 					</div>
 				</div>
@@ -88,15 +130,16 @@
 import {
 	Breadcrumbs,
 	Button,
-	call,
 	createListResource,
+	Dropdown,
 	FormControl,
 	Select,
 	TabButtons,
 	usePageMeta,
 } from 'frappe-ui'
 import { computed, inject, onMounted, ref, watch } from 'vue'
-import { Plus } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { ChevronDown, Plus } from 'lucide-vue-next'
 import { sessionStore } from '@/stores/session'
 import BatchCard from '@/components/BatchCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -115,6 +158,7 @@ const is_student = computed(() => user.data?.is_student)
 const currentTab = ref(is_student.value ? 'All' : 'Upcoming')
 const orderBy = ref('start_date')
 const readOnlyMode = window.read_only_mode
+const router = useRouter()
 
 onMounted(() => {
 	setFiltersFromQuery()
@@ -140,16 +184,17 @@ const batches = createListResource({
 	cache: ['batches', user.data?.name],
 	pageLength: pageLength.value,
 	start: start.value,
-	onSuccess(data) {
-		let allCategories = data.map((batch) => batch.category)
-		allCategories = allCategories.filter(
-			(category, index) => allCategories.indexOf(category) === index && category
-		)
-		if (categories.value.length <= allCategories.length) {
-			updateCategories(data)
-		}
-	},
 })
+
+const setCategories = (data) => {
+	let allCategories = data.map((batch) => batch.category)
+	allCategories = allCategories.filter(
+		(category, index) => allCategories.indexOf(category) === index && category
+	)
+	if (categories.value.length <= allCategories.length) {
+		updateCategories(data)
+	}
+}
 
 const updateBatches = () => {
 	updateFilters()
@@ -157,7 +202,9 @@ const updateBatches = () => {
 		filters: filters.value,
 		orderBy: orderBy.value,
 	})
-	batches.reload()
+	batches.reload().then((data) => {
+		setCategories(data)
+	})
 }
 
 const updateFilters = () => {
@@ -244,12 +291,11 @@ const setQueryParams = () => {
 		}
 	})
 
-	let queryString = ''
-	if (queries.toString()) {
-		queryString = `?${queries.toString()}`
-	}
-
-	history.replaceState({}, '', `${location.pathname}${queryString}`)
+	history.replaceState(
+		{},
+		'',
+		`${location.pathname}${queries.size > 0 ? `?${queries.toString()}` : ''}`
+	)
 }
 
 const updateCategories = (data) => {

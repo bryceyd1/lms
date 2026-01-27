@@ -112,7 +112,12 @@
 		}"
 	>
 		<template #body-content>
-			<FormControl v-model="title" :label="__('Title')" type="text" />
+			<FormControl
+				v-model="title"
+				:label="__('Title')"
+				type="text"
+				@keydown.enter="insertQuiz(() => (showForm = false))"
+			/>
 		</template>
 	</Dialog>
 </template>
@@ -134,16 +139,20 @@ import {
 	toast,
 	usePageMeta,
 } from 'frappe-ui'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { Plus } from 'lucide-vue-next'
 import { sessionStore } from '@/stores/session'
+import { escapeHTML } from '@/utils'
+import { useTelemetry } from 'frappe-ui/frappe'
 import EmptyState from '@/components/EmptyState.vue'
 
 const { brand } = sessionStore()
+const { capture } = useTelemetry()
 const user = inject('$user')
 const dayjs = inject('$dayjs')
 const router = useRouter()
+const route = useRoute()
 const search = ref('')
 const readOnlyMode = window.read_only_mode
 const quizFilters = ref({})
@@ -155,6 +164,9 @@ onMounted(() => {
 		router.push({ name: 'Courses' })
 	} else if (!user.data?.is_moderator) {
 		quizFilters.value['owner'] = user.data?.name
+	}
+	if (route.query.new === 'true') {
+		showForm.value = true
 	}
 })
 
@@ -191,7 +203,12 @@ const quizzes = createListResource({
 	},
 })
 
+const validateTitle = () => {
+	title.value = escapeHTML(title.value.trim())
+}
+
 const insertQuiz = (close) => {
+	validateTitle()
 	quizzes.insert.submit(
 		{
 			title: title.value,
@@ -201,6 +218,7 @@ const insertQuiz = (close) => {
 				toast.success(__('Quiz created successfully'))
 				close()
 				title.value = ''
+				capture('quiz_created')
 				router.push({
 					name: 'QuizForm',
 					params: {

@@ -19,9 +19,15 @@
 									showOptions = true
 								}
 							"
+							@focus="
+								() => {
+									showOptions = true
+									if (!filterOptions.data || filterOptions.data.length === 0) {
+										reload('')
+									}
+								}
+							"
 							autocomplete="off"
-							@focus="() => togglePopover()"
-							@keydown.delete.capture.stop="removeLastValue"
 						/>
 					</template>
 					<template #body="{ isOpen, close }">
@@ -30,10 +36,12 @@
 								class="mt-1 rounded-lg bg-surface-white py-1 text-base border-2"
 							>
 								<ComboboxOptions
-									class="my-1 min-h-[6rem] max-h-[12rem] overflow-y-auto px-1.5"
+									class="my-1 max-h-[12rem] overflow-y-auto px-1.5"
+									:class="options.length ? 'min-h-[6rem]' : 'min-h-[3.8rem]'"
 									static
 								>
 									<ComboboxOption
+										v-if="options.length"
 										v-for="option in options"
 										:key="option.value"
 										:value="option"
@@ -55,10 +63,12 @@
 											</div>
 										</li>
 									</ComboboxOption>
-									<div class="h-10"></div>
+									<div v-else class="text-ink-gray-7 px-4">
+										{{ __('No results found') }}
+									</div>
 									<div
 										v-if="attrs.onCreate"
-										class="absolute bottom-2 left-1 w-[99%] pt-2 bg-white border-t"
+										class="absolute bottom-2 left-1 w-[95%] pt-2 bg-white border-t"
 									>
 										<Button
 											variant="ghost"
@@ -150,9 +160,6 @@ const selectedValue = computed({
 	get: () => query.value || '',
 	set: (val) => {
 		query.value = ''
-		if (val) {
-			showOptions.value = false
-		}
 		val?.value && addValue(val.value)
 	},
 })
@@ -180,7 +187,9 @@ const filterOptions = createResource({
 })
 
 const options = computed(() => {
-	return filterOptions.data || []
+	setFocus()
+	const allOptions = filterOptions.data || []
+	return allOptions.filter((option) => !values.value?.includes(option.value))
 })
 
 function reload(val) {
@@ -223,25 +232,6 @@ const addValue = (value) => {
 
 const removeValue = (value) => {
 	values.value = values.value.filter((v) => v !== value)
-}
-
-const removeLastValue = () => {
-	if (query.value) return
-
-	let emailRef = emails.value[emails.value.length - 1]?.$el
-	if (document.activeElement === emailRef) {
-		values.value.pop()
-		nextTick(() => {
-			if (values.value.length) {
-				emailRef = emails.value[emails.value.length - 1].$el
-				emailRef?.focus()
-			} else {
-				setFocus()
-			}
-		})
-	} else {
-		emailRef?.focus()
-	}
 }
 
 function setFocus() {

@@ -113,6 +113,12 @@ const routes = [
 		props: true,
 	},
 	{
+		path: '/job-openings/:job/applications',
+		name: 'JobApplications',
+		component: () => import('@/pages/JobApplications.vue'),
+		props: true,
+	},
+	{
 		path: '/courses/:courseName/edit',
 		name: 'CourseForm',
 		component: () => import('@/pages/CourseForm.vue'),
@@ -237,6 +243,28 @@ const routes = [
 			),
 		props: true,
 	},
+	{
+		path: '/search',
+		name: 'Search',
+		component: () => import('@/pages/Search/Search.vue'),
+	},
+	{
+		path: '/data-import',
+		name: 'DataImportList',
+		component: () => import('@/pages/DataImport.vue'),
+	},
+	{
+		path: '/data-import/doctype/:doctype',
+		name: 'NewDataImport',
+		component: () => import('@/pages/DataImport.vue'),
+		props: true,
+	},
+	{
+		path: '/data-import/:importName',
+		name: 'DataImport',
+		component: () => import('@/pages/DataImport.vue'),
+		props: true,
+	},
 ]
 
 let router = createRouter({
@@ -247,7 +275,7 @@ let router = createRouter({
 router.beforeEach(async (to, from, next) => {
 	const { userResource } = usersStore()
 	let { isLoggedIn } = sessionStore()
-	const { allowGuestAccess } = useSettings()
+	const { settings } = useSettings()
 
 	try {
 		if (isLoggedIn) {
@@ -260,8 +288,8 @@ router.beforeEach(async (to, from, next) => {
 	if (!isLoggedIn) {
 		if (to.name == 'Home') router.push({ name: 'Courses' })
 
-		await allowGuestAccess.promise
-		if (!allowGuestAccess.data) {
+		await settings.promise
+		if (!settings.data.allow_guest_access) {
 			window.location.href = '/login'
 			return
 		}

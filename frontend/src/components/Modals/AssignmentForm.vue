@@ -27,6 +27,12 @@
 						:label="__('Submission Type')"
 						:required="true"
 					/>
+					<Link
+						v-model="assignment.course"
+						:label="__('Course')"
+						doctype="LMS Course"
+						placeholder=" "
+					/>
 					<div>
 						<div class="text-xs text-ink-gray-5 mb-2">
 							{{ __('Question') }}
@@ -66,6 +72,8 @@
 <script setup lang="ts">
 import { Button, Dialog, FormControl, TextEditor, toast } from 'frappe-ui'
 import { computed, reactive, watch } from 'vue'
+import { escapeHTML, sanitizeHTML } from '@/utils'
+import { Link } from 'frappe-ui/frappe'
 
 const show = defineModel()
 const assignments = defineModel<Assignments>('assignments')
@@ -74,6 +82,7 @@ interface Assignment {
 	title: string
 	type: string
 	question: string
+	course?: string
 }
 
 interface Assignments {
@@ -88,6 +97,7 @@ const assignment = reactive({
 	title: '',
 	type: '',
 	question: '',
+	course: '',
 })
 
 const props = defineProps({
@@ -106,6 +116,7 @@ watch(
 					assignment.title = row.title
 					assignment.type = row.type
 					assignment.question = row.question
+					assignment.course = row.course || ''
 				}
 			})
 		}
@@ -113,33 +124,55 @@ watch(
 	{ flush: 'post' }
 )
 
-const saveAssignment = () => {
-	if (props.assignmentID == 'new') {
-		assignments.value.insert.submit(
-			{
-				...assignment,
-			},
-			{
-				onSuccess() {
-					show.value = false
-					toast.success(__('Assignment created successfully'))
-				},
-			}
-		)
-	} else {
-		assignments.value.setValue.submit(
-			{
-				...assignment,
-				name: props.assignmentID,
-			},
-			{
-				onSuccess() {
-					show.value = false
-					toast.success(__('Assignment updated successfully'))
-				},
-			}
-		)
+watch(show, (newVal) => {
+	if (newVal && props.assignmentID === 'new') {
+		assignment.title = ''
+		assignment.type = ''
+		assignment.question = ''
 	}
+})
+
+const validateFields = () => {
+	assignment.title = escapeHTML(assignment.title.trim())
+	assignment.question = sanitizeHTML(assignment.question)
+}
+
+const saveAssignment = () => {
+	validateFields()
+	if (props.assignmentID == 'new') {
+		createAssignment()
+	} else {
+		updateAssignment()
+	}
+}
+
+const createAssignment = () => {
+	assignments.value.insert.submit(
+		{
+			...assignment,
+		},
+		{
+			onSuccess() {
+				show.value = false
+				toast.success(__('Assignment created successfully'))
+			},
+		}
+	)
+}
+
+const updateAssignment = () => {
+	assignments.value.setValue.submit(
+		{
+			...assignment,
+			name: props.assignmentID,
+		},
+		{
+			onSuccess() {
+				show.value = false
+				toast.success(__('Assignment updated successfully'))
+			},
+		}
+	)
 }
 
 const assignmentOptions = computed(() => {

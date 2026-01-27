@@ -10,7 +10,7 @@
 		</header>
 		<div class="py-5">
 			<div class="container border-b mb-4 pb-5">
-				<div class="text-lg font-semibold mb-4">
+				<div class="text-lg font-semibold mb-4 text-ink-gray-9">
 					{{ __('Job Details') }}
 				</div>
 				<div class="grid grid-cols-2 gap-5">
@@ -59,7 +59,7 @@
 				</div>
 			</div>
 			<div class="container border-b mb-4 pb-5">
-				<div class="text-lg font-semibold mb-4">
+				<div class="text-lg font-semibold mb-4 text-ink-gray-9">
 					{{ __('Company Details') }}
 				</div>
 				<div class="grid grid-cols-2 gap-5">
@@ -83,47 +83,11 @@
 							class="mb-4"
 							:required="true"
 						/>
-						<label class="block text-ink-gray-5 text-xs mb-1 mt-4">
-							{{ __('Company Logo') }}
-							<span class="text-ink-red-3">*</span>
-						</label>
-						<FileUploader
-							v-if="!job.image"
-							:fileTypes="['image/*']"
-							:validateFile="validateFile"
-							@success="(file) => saveImage(file)"
-						>
-							<template
-								v-slot="{ file, progress, uploading, openFileSelector }"
-							>
-								<div class="mb-4">
-									<Button @click="openFileSelector" :loading="uploading">
-										{{
-											uploading ? `Uploading ${progress}%` : 'Upload an image'
-										}}
-									</Button>
-								</div>
-							</template>
-						</FileUploader>
-						<div v-else class="">
-							<div class="flex items-center">
-								<div class="border rounded-md p-2 mr-2">
-									<FileText class="h-5 w-5 stroke-1.5 text-ink-gray-7" />
-								</div>
-								<div class="flex flex-col">
-									<span>
-										{{ job.image.file_name }}
-									</span>
-									<span class="text-sm text-ink-gray-4 mt-1">
-										{{ getFileSize(job.image.file_size) }}
-									</span>
-								</div>
-								<X
-									@click="removeImage()"
-									class="bg-surface-gray-3 rounded-md cursor-pointer stroke-1.5 w-5 h-5 p-1 ml-4"
-								/>
-							</div>
-						</div>
+						<Uploader
+							v-model="job.company_logo"
+							:label="__('Company Logo')"
+							:required="true"
+						/>
 					</div>
 				</div>
 			</div>
@@ -150,15 +114,14 @@ import {
 	createResource,
 	Button,
 	TextEditor,
-	FileUploader,
 	usePageMeta,
 	toast,
 } from 'frappe-ui'
 import { computed, onMounted, reactive, inject } from 'vue'
-import { FileText, X } from 'lucide-vue-next'
 import { sessionStore } from '@/stores/session'
 import { useRouter } from 'vue-router'
-import { escapeHTML, getFileSize, validateFile } from '@/utils'
+import { escapeHTML, sanitizeHTML } from '@/utils'
+import Uploader from '@/components/Controls/Uploader.vue'
 
 const user = inject('$user')
 const router = useRouter()
@@ -177,7 +140,7 @@ const newJob = createResource({
 		return {
 			doc: {
 				doctype: 'Job Opportunity',
-				company_logo: job.image?.file_url,
+				company_logo: job.company_logo,
 				...job,
 			},
 		}
@@ -191,7 +154,7 @@ const updateJob = createResource({
 			doctype: 'Job Opportunity',
 			name: props.jobName,
 			fieldname: {
-				company_logo: job.image.file_url,
+				company_logo: job.company_logo,
 				...job,
 			},
 		}
@@ -207,23 +170,14 @@ const jobDetail = createResource({
 		}
 	},
 	onSuccess(data) {
+		if (data.owner != user.data?.name && !user.data?.is_moderator) {
+			router.push({
+				name: 'Jobs',
+			})
+		}
 		Object.keys(data).forEach((key) => {
 			if (Object.hasOwn(job, key)) job[key] = data[key]
 		})
-		if (data.company_logo) imageResource.reload({ image: data.company_logo })
-	},
-})
-
-const imageResource = createResource({
-	url: 'lms.lms.api.get_file_info',
-	makeParams(values) {
-		return {
-			file_url: values.image,
-		}
-	},
-	auto: false,
-	onSuccess(data) {
-		job.image = data
 	},
 })
 
@@ -236,16 +190,30 @@ const job = reactive({
 	status: 'Open',
 	company_name: '',
 	company_website: '',
-	image: null,
+	company_logo: null,
 	description: '',
 	company_email_address: '',
 })
 
 onMounted(() => {
-	if (!user.data) window.location.href = '/login'
+	if (!user.data) {
+		router.push({
+			name: 'Jobs',
+		})
+	}
 
 	if (props.jobName != 'new') jobDetail.reload()
+	addKeyboardShortcuts()
 })
+
+const addKeyboardShortcuts = () => {
+	document.addEventListener('keydown', (e) => {
+		if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+			e.preventDefault()
+			saveJob()
+		}
+	})
+}
 
 const saveJob = () => {
 	validateJobFields()
@@ -295,19 +263,12 @@ const editJobDetails = () => {
 }
 
 const validateJobFields = () => {
+	job.description = sanitizeHTML(job.description)
 	Object.keys(job).forEach((key) => {
 		if (key != 'description' && typeof job[key] === 'string') {
 			job[key] = escapeHTML(job[key])
 		}
 	})
-}
-
-const saveImage = (file) => {
-	job.image = file
-}
-
-const removeImage = () => {
-	job.image = null
 }
 
 const jobTypes = computed(() => {
@@ -350,7 +311,7 @@ const breadcrumbs = computed(() => {
 
 usePageMeta(() => {
 	return {
-		title: props.jobName == 'new' ? 'New Job' : jobDetail.data?.title,
+		title: props.jobName == 'new' ? 'New Job' : jobDetail.data?.job_title,
 		icon: brand.favicon,
 	}
 })

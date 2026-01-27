@@ -34,6 +34,10 @@
   "column_break_flwy",
   "seat_count",
   "evaluation_end_date",
+  "notification_sent",
+  "section_break_jedp",
+  "video_link",
+  "column_break_kpct",
   "meta_image",
   "section_break_khcn",
   "batch_details",
@@ -361,6 +365,26 @@
    "fieldtype": "Link",
    "label": "Zoom Account",
    "options": "LMS Zoom Settings"
+  },
+  {
+   "fieldname": "video_link",
+   "fieldtype": "Attach",
+   "label": "Preview Video"
+  },
+  {
+   "default": "0",
+   "fieldname": "notification_sent",
+   "fieldtype": "Check",
+   "label": "Notification Sent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_jedp",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_kpct",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
@@ -377,9 +401,13 @@
   {
    "link_doctype": "LMS Certificate",
    "link_fieldname": "batch_name"
+  },
+  {
+   "link_doctype": "LMS Payment",
+   "link_fieldname": "payment_for_document"
   }
  ],
- "modified": "2025-05-26 15:30:55.083507",
+ "modified": "2026-01-13 18:50:27.420712",
  "modified_by": "sayali@frappe.io",
  "module": "LMS",
  "name": "LMS Batch",
@@ -422,13 +450,8 @@
    "write": 1
   },
   {
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
-   "role": "LMS Student",
-   "share": 1
+   "role": "LMS Student"
   }
  ],
  "row_format": "Dynamic",

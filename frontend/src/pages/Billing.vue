@@ -13,49 +13,94 @@
 			class="pt-5 pb-10 mx-5"
 		>
 			<div class="flex flex-col lg:flex-row justify-between">
-				<div
-					class="h-fit bg-surface-gray-2 rounded-md p-5 space-y-4 lg:order-last mb-10 lg:mt-10 font-medium lg:w-1/3"
-				>
-					<div class="flex items-baseline justify-between space-y-2">
-						<div class="text-ink-gray-5">
-							{{ __('Payment for ') }} {{ type }}:
+				<div class="flex flex-col lg:order-last mb-10 lg:mt-10 lg:w-1/4">
+					<div class="h-fit bg-surface-gray-2 rounded-md p-5 space-y-4">
+						<div class="space-y-1">
+							<div class="text-ink-gray-5 uppercase text-xs">
+								{{ __('Payment for ') }} {{ type }}:
+							</div>
+							<div class="leading-5 text-ink-gray-9">
+								{{ orderSummary.data.title }}
+							</div>
 						</div>
-						<div class="leading-5 text-ink-gray-9">
-							{{ orderSummary.data.title }}
+						<div
+							v-if="
+								orderSummary.data.gst_applied ||
+								orderSummary.data.discount_amount
+							"
+							class="space-y-1"
+						>
+							<div class="text-ink-gray-5 uppercase text-xs">
+								{{ __('Original Amount') }}:
+							</div>
+							<div class="text-ink-gray-9">
+								{{ orderSummary.data.original_amount_formatted }}
+							</div>
+						</div>
+						<div v-if="orderSummary.data.discount_amount" class="space-y-1">
+							<div class="text-ink-gray-5">{{ __('Discount') }}:</div>
+							<div>- {{ orderSummary.data.discount_amount_formatted }}</div>
+						</div>
+						<div v-if="orderSummary.data.gst_applied" class="space-y-1">
+							<div class="text-ink-gray-5 uppercase text-xs">
+								{{ __('GST Amount') }}:
+							</div>
+							<div class="text-ink-gray-9">
+								{{ orderSummary.data.gst_amount_formatted }}
+							</div>
+						</div>
+						<div class="space-y-1 border-t border-outline-gray-3 pt-4 mt-2">
+							<div class="uppercase text-ink-gray-5 text-xs">
+								{{ __('Total') }}:
+							</div>
+							<div class="font-bold text-ink-gray-9">
+								{{ orderSummary.data.total_amount_formatted }}
+							</div>
 						</div>
 					</div>
-					<div
-						v-if="orderSummary.data.gst_applied"
-						class="flex items-center justify-between"
+
+					<div class="bg-surface-gray-2 rounded-md p-4 space-y-2 my-5">
+						<span class="text-ink-gray-5 uppercase text-xs">
+							{{ __('Enter a Coupon Code') }}:
+						</span>
+						<div class="flex items-center space-x-2">
+							<FormControl
+								v-model="appliedCoupon"
+								:disabled="orderSummary.data.discount_amount > 0"
+								@input="appliedCoupon = $event.target.value.toUpperCase()"
+								@keydown.enter="applyCouponCode"
+								placeholder="COUPON2025"
+								autocomplete="off"
+								class="flex-1 [&_input]:bg-white"
+							/>
+							<Button
+								v-if="!orderSummary.data.discount_amount"
+								@click="applyCouponCode"
+								variant="outline"
+							>
+								{{ __('Apply') }}
+							</Button>
+							<Button
+								v-if="orderSummary.data.discount_amount"
+								@click="removeCoupon"
+								variant="outline"
+							>
+								<template #icon>
+									<X class="size-4 stroke-1.5" />
+								</template>
+							</Button>
+						</div>
+					</div>
+
+					<p
+						class="bg-surface-amber-2 text-ink-amber-2 text-sm leading-5 p-2 rounded-md"
 					>
-						<div class="text-ink-gray-5">
-							{{ __('Original Amount') }}
-						</div>
-						<div class="text-ink-gray-9">
-							{{ orderSummary.data.original_amount_formatted }}
-						</div>
-					</div>
-					<div
-						v-if="orderSummary.data.gst_applied"
-						class="flex items-center justify-between mt-2"
-					>
-						<div class="text-ink-gray-5">
-							{{ __('GST Amount') }}
-						</div>
-						<div class="text-ink-gray-9">
-							{{ orderSummary.data.gst_amount_formatted }}
-						</div>
-					</div>
-					<div
-						class="flex items-center justify-between border-t border-outline-gray-3 pt-4 mt-2"
-					>
-						<div class="text-lg font-semibold text-ink-gray-9">
-							{{ __('Total') }}
-						</div>
-						<div class="text-lg font-semibold text-ink-gray-9">
-							{{ orderSummary.data.total_amount_formatted }}
-						</div>
-					</div>
+						{{
+							__(
+								'Please ensure that the billing name you enter is correct, as it will be used on your invoice.'
+							)
+						}}
+					</p>
 				</div>
 
 				<div class="flex-1 lg:mr-10">
@@ -69,16 +114,22 @@
 							<FormControl
 								:label="__('Billing Name')"
 								v-model="billingDetails.billing_name"
+								:required="true"
 							/>
 							<FormControl
 								:label="__('Address Line 1')"
 								v-model="billingDetails.address_line1"
+								:required="true"
 							/>
 							<FormControl
 								:label="__('Address Line 2')"
 								v-model="billingDetails.address_line2"
 							/>
-							<FormControl :label="__('City')" v-model="billingDetails.city" />
+							<FormControl
+								:label="__('City')"
+								v-model="billingDetails.city"
+								:required="true"
+							/>
 							<FormControl
 								:label="__('State/Province')"
 								v-model="billingDetails.state"
@@ -90,20 +141,24 @@
 								:value="billingDetails.country"
 								@change="(option) => changeCurrency(option)"
 								:label="__('Country')"
+								:required="true"
 							/>
 							<FormControl
 								:label="__('Postal Code')"
 								v-model="billingDetails.pincode"
+								:required="true"
 							/>
 							<FormControl
 								:label="__('Phone Number')"
 								v-model="billingDetails.phone"
+								:required="true"
 							/>
 							<Link
 								doctype="LMS Source"
 								:value="billingDetails.source"
 								@change="(option) => (billingDetails.source = option)"
 								:label="__('Where did you hear about us?')"
+								:required="true"
 							/>
 							<FormControl
 								v-if="billingDetails.country == 'India'"
@@ -112,19 +167,34 @@
 							/>
 							<FormControl
 								v-if="billingDetails.country == 'India'"
-								:label="__('Pan Number')"
+								:label="__('PAN Number')"
 								v-model="billingDetails.pan"
 							/>
 						</div>
 					</div>
-					<div class="flex items-center justify-between border-t pt-4 mt-8">
-						<p class="text-ink-gray-5">
-							{{
-								__(
-									'Make sure to enter the correct billing name as the same will be used in your invoice.'
-								)
-							}}
-						</p>
+					<div
+						class="flex flex-col lg:flex-row items-start lg:items-center justify-between border-t pt-4 mt-8 space-y-4 lg:space-y-0"
+					>
+						<div>
+							<FormControl
+								:label="
+									__(
+										'I consent to my personal information being stored for invoicing'
+									)
+								"
+								type="checkbox"
+								class="leading-6"
+								v-model="billingDetails.member_consent"
+							/>
+							<div
+								v-if="showConsentWarning"
+								class="mt-1 text-xs text-ink-red-3"
+							>
+								{{
+									__('Please provide your consent to proceed with the payment')
+								}}
+							</div>
+						</div>
 						<Button variant="solid" size="md" @click="generatePaymentLink()">
 							{{ __('Proceed to Payment') }}
 						</Button>
@@ -157,14 +227,19 @@ import {
 	Breadcrumbs,
 	usePageMeta,
 	toast,
+	call,
 } from 'frappe-ui'
-import { reactive, inject, onMounted, computed } from 'vue'
+import { reactive, inject, onMounted, computed, ref, watch } from 'vue'
 import { sessionStore } from '../stores/session'
 import Link from '@/components/Controls/Link.vue'
 import NotPermitted from '@/components/NotPermitted.vue'
+import { X } from 'lucide-vue-next'
+import { useTelemetry } from 'frappe-ui/frappe'
 
 const user = inject('$user')
 const { brand } = sessionStore()
+const showConsentWarning = ref(false)
+const { capture } = useTelemetry()
 
 onMounted(() => {
 	const script = document.createElement('script')
@@ -205,6 +280,7 @@ const orderSummary = createResource({
 			doctype: props.type == 'batch' ? 'LMS Batch' : 'LMS Course',
 			docname: props.name,
 			country: billingDetails.country,
+			coupon: appliedCoupon.value,
 		}
 	},
 	onError(err) {
@@ -212,6 +288,7 @@ const orderSummary = createResource({
 	},
 })
 
+const appliedCoupon = ref(null)
 const billingDetails = reactive({})
 
 const setBillingDetails = (data) => {
@@ -231,17 +308,21 @@ const setBillingDetails = (data) => {
 const paymentLink = createResource({
 	url: 'lms.lms.payments.get_payment_link',
 	makeParams(values) {
-		return {
+		let data = {
 			doctype: props.type == 'batch' ? 'LMS Batch' : 'LMS Course',
 			docname: props.name,
 			title: orderSummary.data.title,
 			amount: orderSummary.data.original_amount,
-			total_amount: orderSummary.data.amount,
+			discount_amount: orderSummary.data.discount_amount || 0,
+			gst_amount: orderSummary.data.gst_applied || 0,
 			currency: orderSummary.data.currency,
 			address: billingDetails,
 			redirect_to: redirectTo.value,
 			payment_for_certificate: props.type == 'certificate',
+			coupon_code: appliedCoupon.value,
+			coupon: orderSummary.data.coupon,
 		}
+		return data
 	},
 })
 
@@ -253,9 +334,14 @@ const generatePaymentLink = () => {
 				if (!billingDetails.source) {
 					return __('Please let us know where you heard about us from.')
 				}
+				if (!billingDetails.member_consent) {
+					showConsentWarning.value = true
+					return __('Please provide your consent to proceed with the payment.')
+				}
 				return validateAddress()
 			},
 			onSuccess(data) {
+				capture('checkout_initiated', { type: props.type })
 				window.location.href = data
 			},
 			onError(err) {
@@ -263,6 +349,19 @@ const generatePaymentLink = () => {
 			},
 		}
 	)
+}
+
+function applyCouponCode() {
+	if (!appliedCoupon.value) {
+		toast.error(__('Please enter a coupon code'))
+		return
+	}
+	orderSummary.reload()
+}
+
+function removeCoupon() {
+	appliedCoupon.value = null
+	orderSummary.reload()
 }
 
 const validateAddress = () => {
@@ -329,8 +428,6 @@ const validateAddress = () => {
 		!states.includes(billingDetails.state)
 	)
 		return 'Please enter a valid state with correct spelling and the first letter capitalized.'
-
-	console.log('validation address')
 }
 
 const showError = (err) => {
@@ -349,6 +446,12 @@ const redirectTo = computed(() => {
 		return `/lms/batches/${props.name}`
 	} else if (props.type == 'certificate') {
 		return `/lms/courses/${props.name}/certification`
+	}
+})
+
+watch(billingDetails, () => {
+	if (billingDetails.member_consent) {
+		showConsentWarning.value = false
 	}
 })
 

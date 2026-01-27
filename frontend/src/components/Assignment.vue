@@ -25,7 +25,7 @@
 			></div>
 		</div>
 
-		<div class="flex flex-col">
+		<div class="flex flex-col overflow-y-auto">
 			<div class="p-5">
 				<div class="flex items-center justify-between mb-4">
 					<div class="font-semibold text-ink-gray-9">
@@ -179,6 +179,9 @@
 							"
 							:editable="true"
 							:fixedMenu="true"
+							:uploadArgs="{
+								private: true,
+							}"
 							editorClass="prose-sm max-w-none border-b border-x bg-surface-gray-2 rounded-b-md py-1 px-2 min-h-[7rem]"
 						/>
 					</div>

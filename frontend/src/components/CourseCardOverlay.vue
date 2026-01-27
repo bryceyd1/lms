@@ -189,15 +189,16 @@ import {
 import { computed, inject, ref } from 'vue'
 import { Badge, Button, call, createResource, toast } from 'frappe-ui'
 import { formatAmount } from '@/utils/'
-import { capture } from '@/telemetry'
 import { useRouter } from 'vue-router'
 import CertificationLinks from '@/components/CertificationLinks.vue'
 import CourseProgressSummary from '@/components/Modals/CourseProgressSummary.vue'
+import { useTelemetry } from 'frappe-ui/frappe'
 
 const router = useRouter()
 const user = inject('$user')
 const showProgressModal = ref(false)
 const readOnlyMode = window.read_only_mode
+const { capture } = useTelemetry()
 
 const props = defineProps({
 	course: {
@@ -215,13 +216,17 @@ const video_link = computed(() => {
 
 function enrollStudent() {
 	if (!user.data) {
-		toast.success(__('You need to login first to enroll for this course'))
+		toast.warning(__('You need to login first to enroll for this course'))
 		setTimeout(() => {
 			window.location.href = `/login?redirect-to=${window.location.pathname}`
 		}, 500)
 	} else {
-		call('lms.lms.doctype.lms_enrollment.lms_enrollment.create_membership', {
-			course: props.course.data.name,
+		call('frappe.client.insert', {
+			doc: {
+				doctype: 'LMS Enrollment',
+				course: props.course.data.name,
+				member: user.data.name,
+			},
 		})
 			.then(() => {
 				capture('enrolled_in_course', {

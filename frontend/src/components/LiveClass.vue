@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="hasPermission() && !props.zoomAccount"
-		class="flex items-center space-x-2 mb-5 bg-surface-amber-1 py-1 px-2 rounded-md text-ink-amber-3"
+		class="flex items-center space-x-2 mb-5 bg-surface-amber-1 py-1 px-2 rounded-md text-ink-amber-3 text-xs"
 	>
 		<AlertCircle class="size-4 stroke-1.5" />
 		<span>
@@ -107,7 +107,11 @@
 		v-model:reloadLiveClasses="liveClasses"
 	/>
 
-	<LiveClassAttendance v-model="showAttendance" :live_class="attendanceFor" />
+	<LiveClassAttendance
+		v-if="showAttendance"
+		v-model="showAttendance"
+		:live_class="attendanceFor"
+	/>
 </template>
 <script setup>
 import { createListResource, Button, Tooltip } from 'frappe-ui'

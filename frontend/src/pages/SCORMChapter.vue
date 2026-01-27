@@ -201,17 +201,17 @@ const saveDataToLMS = (key, value) => {
 		console.warn(`Invalid SCORM key attempted: ${key}`)
 		return
 	}
-	
+
 	// SECURITY FIX: Check rate limit
 	if (!checkRateLimit()) {
 		return
 	}
-	
+
 	// SECURITY FIX: Sanitize all input values
 	const sanitizedValue = sanitizeInput(value)
-	
+
 	if (key === 'cmi.core.lesson_status') {
-		
+
 		if (value === 'passed') {
 			isSuccessfullyCompleted.value = true
 			saveProgress({
@@ -234,7 +234,7 @@ const saveDataToLMS = (key, value) => {
 			console.warn(`Invalid score value: ${value}`)
 			return
 		}
-		
+
 		debouncedSaveProgress({
 			is_complete: isSuccessfullyCompleted.value,
 			scorm_raw_score: score,

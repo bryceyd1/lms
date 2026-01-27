@@ -11,7 +11,7 @@
 					<div v-for="tab in tabs" :key="tab.label">
 						<div
 							v-if="!tab.hideLabel"
-							class="mb-2 mt-3 flex cursor-pointer gap-1.5 px-1 text-base font-medium text-ink-gray-5 transition-all duration-300 ease-in-out"
+							class="mb-2 mt-3 flex cursor-pointer gap-1.5 px-1 text-base text-ink-gray-5 transition-all duration-300 ease-in-out"
 						>
 							<span>{{ __(tab.label) }}</span>
 						</div>
@@ -29,7 +29,7 @@
 				<div
 					v-if="activeTab && data.doc"
 					:key="activeTab.label"
-					class="flex flex-1 flex-col px-10 py-8 bg-surface-modal"
+					class="flex flex-1 flex-col p-8 bg-surface-modal overflow-x-auto"
 				>
 					<component
 						v-if="activeTab.template"
@@ -38,7 +38,7 @@
 							label: activeTab.label,
 							description: activeTab.description,
 							...(activeTab.label == 'Branding'
-								? { fields: activeTab.fields }
+								? { sections: activeTab.sections }
 								: {}),
 							...(activeTab.label == 'Evaluators' ||
 							activeTab.label == 'Members' ||
@@ -47,16 +47,9 @@
 								: {}),
 						}"
 					/>
-					<!-- <PaymentSettings
-						v-else-if="activeTab.label === 'Gateways'"
-						:label="activeTab.label"
-						:description="activeTab.description"
-						:data="data"
-						:fields="activeTab.fields"
-					/> -->
 					<SettingDetails
 						v-else
-						:fields="activeTab.fields"
+						:sections="activeTab.sections"
 						:label="activeTab.label"
 						:description="activeTab.description"
 						:data="data"
@@ -71,14 +64,15 @@ import { Dialog, createDocumentResource } from 'frappe-ui'
 import { computed, markRaw, ref, watch } from 'vue'
 import { useSettings } from '@/stores/settings'
 import SettingDetails from '@/components/Settings/SettingDetails.vue'
-import SidebarLink from '@/components/SidebarLink.vue'
+import SidebarLink from '@/components/Sidebar/SidebarLink.vue'
 import Members from '@/components/Settings/Members.vue'
 import Evaluators from '@/components/Settings/Evaluators.vue'
 import Categories from '@/components/Settings/Categories.vue'
 import EmailTemplates from '@/components/Settings/EmailTemplates.vue'
 import BrandSettings from '@/components/Settings/BrandSettings.vue'
 import PaymentGateways from '@/components/Settings/PaymentGateways.vue'
-import Transactions from '@/components/Settings/Transactions.vue'
+import Coupons from '@/components/Settings/Coupons/Coupons.vue'
+import Transactions from '@/components/Settings/Transactions/Transactions.vue'
 import ZoomSettings from '@/components/Settings/ZoomSettings.vue'
 import Badges from '@/components/Settings/Badges.vue'
 
@@ -98,140 +92,160 @@ const data = createDocumentResource({
 const tabsStructure = computed(() => {
 	return [
 		{
-			label: 'Settings',
+			label: 'Configuration',
 			hideLabel: true,
 			items: [
 				{
 					label: 'General',
 					icon: 'Wrench',
-					fields: [
+					sections: [
 						{
-							label: 'Allow Guest Access',
-							name: 'allow_guest_access',
-							description:
-								'If enabled, users can access the course and batch lists without logging in.',
-							type: 'checkbox',
+							label: 'System Configurations',
+							columns: [
+								{
+									fields: [
+										{
+											label: 'Allow Guest Access',
+											name: 'allow_guest_access',
+											description:
+												'If enabled, users can access the course and batch lists without logging in.',
+											type: 'checkbox',
+										},
+										{
+											label: 'Prevent Skipping Videos',
+											name: 'prevent_skipping_videos',
+											type: 'checkbox',
+											description:
+												'If enabled, users will no able to move forward in a video',
+										},
+									],
+								},
+								{
+									fields: [
+										{
+											label: 'Disable PWA',
+											name: 'disable_pwa',
+											type: 'checkbox',
+											description:
+												'If checked, users will not be able to install the application as a Progressive Web App.',
+										},
+										{
+											label: 'Send calendar invite for evaluations',
+											name: 'send_calendar_invite_for_evaluations',
+											description:
+												'If enabled, it sends google calendar invite to the student for evaluations.',
+											type: 'checkbox',
+										},
+									],
+								},
+							],
 						},
 						{
-							label: 'Prevent Skipping Videos',
-							name: 'prevent_skipping_videos',
-							type: 'checkbox',
-							description:
-								'If enabled, users will no able to move forward in a video',
+							label: 'Notifications',
+							columns: [
+								{
+									fields: [
+										{
+											label: 'Send Notification for Published Courses',
+											name: 'send_notification_for_published_courses',
+											type: 'select',
+											options: [' ', 'Email', 'In-app'],
+										},
+									],
+								},
+								{
+									fields: [
+										{
+											label: 'Send Notification for Published Batches',
+											name: 'send_notification_for_published_batches',
+											type: 'select',
+											options: [' ', 'Email', 'In-app'],
+										},
+									],
+								},
+							],
 						},
 						{
-							label: 'Send calendar invite for evaluations',
-							name: 'send_calendar_invite_for_evaluations',
-							description:
-								'If enabled, it sends google calendar invite to the student for evaluations.',
-							type: 'checkbox',
+							label: 'Email Templates',
+							columns: [
+								{
+									fields: [
+										{
+											label: 'Batch Confirmation Email Template',
+											name: 'batch_confirmation_template',
+											doctype: 'Email Template',
+											type: 'Link',
+										},
+									],
+								},
+								{
+									fields: [
+										{
+											label: 'Certification Email Template',
+											name: 'certification_template',
+											doctype: 'Email Template',
+											type: 'Link',
+										},
+									],
+								},
+							],
 						},
 						{
-							type: 'Column Break',
+							label: 'Contact Information',
+							columns: [
+								{
+									fields: [
+										{
+											label: 'Email',
+											name: 'contact_us_email',
+											type: 'text',
+											description:
+												'Users can reach out to this email for support or inquiries.',
+										},
+									],
+								},
+								{
+									fields: [
+										{
+											label: 'URL',
+											name: 'contact_us_url',
+											type: 'text',
+											description:
+												'Users can reach out to this URL for support or inquiries.',
+										},
+									],
+								},
+							],
 						},
 						{
-							label: 'Livecode URL',
-							name: 'livecode_url',
-							doctype: 'Livecode URL',
-							type: 'text',
-							description:
-								'https://docs.frappe.io/learning/falcon-self-hosting-guide',
-						},
-						{
-							label: 'Batch Confirmation Email Template',
-							name: 'batch_confirmation_template',
-							doctype: 'Email Template',
-							type: 'Link',
-						},
-						{
-							label: 'Certification Email Template',
-							name: 'certification_template',
-							doctype: 'Email Template',
-							type: 'Link',
-						},
-						{
-							label: 'Unsplash Access Key',
-							name: 'unsplash_access_key',
-							description:
-								'Allows users to pick a profile cover image from Unsplash. https://unsplash.com/documentation#getting-started.',
-							type: 'password',
+							label: '',
+							columns: [
+								{
+									fields: [
+										{
+											label: 'Livecode URL',
+											name: 'livecode_url',
+											doctype: 'Livecode URL',
+											type: 'text',
+											description:
+												'https://docs.frappe.io/learning/falcon-self-hosting-guide',
+										},
+									],
+								},
+								{
+									fields: [
+										{
+											label: 'Unsplash Access Key',
+											name: 'unsplash_access_key',
+											description:
+												'Allows users to pick a profile cover image from Unsplash. https://unsplash.com/documentation#getting-started.',
+											type: 'password',
+										},
+									],
+								},
+							],
 						},
 					],
-				},
-				{
-					label: 'Contact Us',
-					icon: 'Phone',
-					fields: [
-						{
-							label: 'Email',
-							name: 'contact_us_email',
-							type: 'text',
-							description:
-								'Users can reach out to this email for support or inquiries.',
-						},
-						{
-							label: 'URL',
-							name: 'contact_us_url',
-							type: 'text',
-							description:
-								'Users can reach out to this URL for support or inquiries.',
-						},
-					],
-				},
-			],
-		},
-		{
-			label: 'Payment',
-			hideLabel: false,
-			items: [
-				{
-					label: 'Configuration',
-					icon: 'CreditCard',
-					description: 'Manage all your payment related settings and defaults',
-					fields: [
-						{
-							label: 'Default Currency',
-							name: 'default_currency',
-							type: 'Link',
-							doctype: 'Currency',
-						},
-						{
-							label: 'Payment Gateway',
-							name: 'payment_gateway',
-							type: 'Link',
-							doctype: 'Payment Gateway',
-						},
-						{
-							type: 'Column Break',
-						},
-						{
-							label: 'Apply GST for India',
-							name: 'apply_gst',
-							type: 'checkbox',
-						},
-						{
-							label: 'Show USD equivalent amount',
-							name: 'show_usd_equivalent',
-							type: 'checkbox',
-						},
-						{
-							label: 'Apply rounding on equivalent',
-							name: 'apply_rounding',
-							type: 'checkbox',
-						},
-					],
-				},
-				{
-					label: 'Gateways',
-					icon: 'DollarSign',
-					template: markRaw(PaymentGateways),
-					description: 'Add and manage all your payment gateways',
-				},
-				{
-					label: 'Transactions',
-					icon: 'Landmark',
-					template: markRaw(Transactions),
-					description: 'View all your payment transactions',
 				},
 			],
 		},
@@ -283,6 +297,76 @@ const tabsStructure = computed(() => {
 			],
 		},
 		{
+			label: 'Payment',
+			hideLabel: false,
+			items: [
+				{
+					label: 'Configuration',
+					icon: 'CreditCard',
+					description: 'Manage all your payment related settings and defaults',
+					sections: [
+						{
+							columns: [
+								{
+									fields: [
+										{
+											label: 'Default Currency',
+											name: 'default_currency',
+											type: 'Link',
+											doctype: 'Currency',
+										},
+										{
+											label: 'Payment Gateway',
+											name: 'payment_gateway',
+											type: 'Link',
+											doctype: 'Payment Gateway',
+										},
+									],
+								},
+								{
+									fields: [
+										{
+											label: 'Apply GST for India',
+											name: 'apply_gst',
+											type: 'checkbox',
+										},
+										{
+											label: 'Show USD equivalent amount',
+											name: 'show_usd_equivalent',
+											type: 'checkbox',
+										},
+										{
+											label: 'Apply rounding on equivalent',
+											name: 'apply_rounding',
+											type: 'checkbox',
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+				{
+					label: 'Gateways',
+					icon: 'DollarSign',
+					template: markRaw(PaymentGateways),
+					description: 'Add and manage all your payment gateways',
+				},
+				{
+					label: 'Transactions',
+					icon: 'Landmark',
+					template: markRaw(Transactions),
+					description: 'View all your payment transactions',
+				},
+				{
+					label: 'Coupons',
+					icon: 'Ticket',
+					template: markRaw(Coupons),
+					description: 'Manage discount coupons for courses and batches',
+				},
+			],
+		},
+		{
 			label: 'Customize',
 			hideLabel: false,
 			items: [
@@ -290,25 +374,33 @@ const tabsStructure = computed(() => {
 					label: 'Branding',
 					icon: 'Blocks',
 					template: markRaw(BrandSettings),
-					fields: [
+					sections: [
 						{
-							label: 'Brand Name',
-							name: 'app_name',
-							type: 'text',
-						},
-						{
-							label: 'Logo',
-							name: 'banner_image',
-							type: 'Upload',
-							description:
-								'Appears in the top left corner of the application to represent your brand.',
-						},
-						{
-							label: 'Favicon',
-							name: 'favicon',
-							type: 'Upload',
-							description:
-								'Appears in the browser tab next to the page title to help users quickly identify the application.',
+							columns: [
+								{
+									fields: [
+										{
+											label: 'Brand Name',
+											name: 'app_name',
+											type: 'text',
+										},
+										{
+											label: 'Logo',
+											name: 'banner_image',
+											type: 'Upload',
+											description:
+												'Appears in the top left corner of the application to represent your brand.',
+										},
+										{
+											label: 'Favicon',
+											name: 'favicon',
+											type: 'Upload',
+											description:
+												'Appears in the browser tab next to the page title to help users quickly identify the application.',
+										},
+									],
+								},
+							],
 						},
 					],
 				},
@@ -316,105 +408,124 @@ const tabsStructure = computed(() => {
 					label: 'Sidebar',
 					icon: 'PanelLeftIcon',
 					description: 'Choose the items you want to show in the sidebar',
-					fields: [
+					sections: [
 						{
-							label: 'Courses',
-							name: 'courses',
-							type: 'checkbox',
-						},
-						{
-							label: 'Batches',
-							name: 'batches',
-							type: 'checkbox',
-						},
-						{
-							label: 'Programming Exercises',
-							name: 'programming_exercises',
-							type: 'checkbox',
-						},
-						{
-							label: 'Certifications',
-							name: 'certifications',
-							type: 'checkbox',
-						},
-						{
-							type: 'Column Break',
-						},
-						{
-							label: 'Jobs',
-							name: 'jobs',
-							type: 'checkbox',
-						},
-						{
-							label: 'Statistics',
-							name: 'statistics',
-							type: 'checkbox',
-						},
-						{
-							label: 'Notifications',
-							name: 'notifications',
-							type: 'checkbox',
+							columns: [
+								{
+									fields: [
+										{
+											label: 'Courses',
+											name: 'courses',
+											type: 'checkbox',
+										},
+										{
+											label: 'Batches',
+											name: 'batches',
+											type: 'checkbox',
+										},
+										{
+											label: 'Programming Exercises',
+											name: 'programming_exercises',
+											type: 'checkbox',
+										},
+										{
+											label: 'Certifications',
+											name: 'certifications',
+											type: 'checkbox',
+										},
+									],
+								},
+								{
+									fields: [
+										{
+											label: 'Jobs',
+											name: 'jobs',
+											type: 'checkbox',
+										},
+										{
+											label: 'Statistics',
+											name: 'statistics',
+											type: 'checkbox',
+										},
+										{
+											label: 'Notifications',
+											name: 'notifications',
+											type: 'checkbox',
+										},
+									],
+								},
+							],
 						},
 					],
 				},
 				{
 					label: 'Signup',
 					icon: 'LogIn',
-					fields: [
+					sections: [
 						{
-							label: 'Identify User Category',
-							name: 'user_category',
-							type: 'checkbox',
-							description:
-								'Enable this option to identify the user category during signup.',
-						},
-						{
-							label: 'Disable signup',
-							name: 'disable_signup',
-							type: 'checkbox',
-							description:
-								'New users will have to be manually registered by Admins.',
-						},
-						{
-							type: 'Column Break',
-						},
-						{
-							label: 'Signup Consent HTML',
-							name: 'custom_signup_content',
-							type: 'Code',
-							mode: 'htmlmixed',
-							rows: 10,
+							columns: [
+								{
+									fields: [
+										{
+											label: 'Identify User Category',
+											name: 'user_category',
+											type: 'checkbox',
+											description:
+												'Enable this option to identify the user category during signup.',
+										},
+										{
+											label: 'Disable signup',
+											name: 'disable_signup',
+											type: 'checkbox',
+											description:
+												'New users will have to be manually registered by Admins.',
+										},
+										{
+											label: 'Signup Consent HTML',
+											name: 'custom_signup_content',
+											type: 'Code',
+											mode: 'htmlmixed',
+											rows: 10,
+										},
+									],
+								},
+							],
 						},
 					],
 				},
 				{
 					label: 'SEO',
 					icon: 'Search',
-					fields: [
+					sections: [
 						{
-							label: 'Meta Description',
-							name: 'meta_description',
-							type: 'textarea',
-							rows: 4,
-							description:
-								"This description will be shown on lists and pages that don't have meta description",
-						},
-						{
-							label: 'Meta Keywords',
-							name: 'meta_keywords',
-							type: 'textarea',
-							rows: 4,
-							description:
-								'Comma separated keywords for search engines to find your website.',
-						},
-						{
-							type: 'Column Break',
-						},
-						{
-							label: 'Meta Image',
-							name: 'meta_image',
-							type: 'Upload',
-							size: 'lg',
+							columns: [
+								{
+									fields: [
+										{
+											label: 'Meta Description',
+											name: 'meta_description',
+											type: 'textarea',
+											rows: 4,
+											description:
+												"This description will be shown on lists and pages that don't have meta description",
+										},
+										{
+											label: 'Meta Keywords',
+											name: 'meta_keywords',
+											type: 'textarea',
+											rows: 4,
+											description:
+												'Comma separated keywords for search engines to find your website.',
+										},
+										{
+											label: 'Meta Image',
+											name: 'meta_image',
+											type: 'Upload',
+											size: 'lg',
+										},
+									],
+								},
+							],
 						},
 					],
 				},
