@@ -77,30 +77,46 @@ onBeforeMount(() => {
 })
 
 // SECURITY FIX: Add input sanitization function
-const sanitizeInput = (value) => {
+const sanitizeInput = (value, isJSON = false) => {
 	if (typeof value !== 'string') return value
-	
+
+	// For JSON data (like suspend_data), validate it's valid JSON but don't encode it
+	if (isJSON) {
+		try {
+			// Validate it's valid JSON
+			JSON.parse(value)
+			// Limit length to prevent DOS
+			if (value.length > 50000) {
+				return value.substring(0, 50000)
+			}
+			return value
+		} catch (e) {
+			console.warn('Invalid JSON in SCORM data, sanitizing as text')
+			// If not valid JSON, fall through to regular sanitization
+		}
+	}
+
 	// Remove HTML tags
 	let clean = value.replace(/<[^>]*>/g, '')
-	
+
 	// Remove script event handlers
 	clean = clean.replace(/on\w+\s*=/gi, '')
-	
+
 	// Remove javascript: pseudo-protocol
 	clean = clean.replace(/javascript:/gi, '')
-	
+
 	// Encode special characters
 	clean = clean
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#x27;')
-	
+
 	// Limit length to prevent DOS
 	if (clean.length > 50000) {
 		clean = clean.substring(0, 50000)
 	}
-	
+
 	return clean
 }
 
@@ -152,15 +168,17 @@ const getDataFromLMS = (key) => {
 		console.warn(`Invalid SCORM key attempted: ${key}`)
 		return ''
 	}
-	
+
 	if (key === 'cmi.core.lesson_status') {
 		return progress.data?.status === 'Complete' ? 'passed' : 'incomplete'
 	} else if (key === 'cmi.core.lesson_mode') {
 		return 'normal'
 	} else if (key === 'cmi.launch_data') {
-		return sanitizeInput(progress.data?.scorm_content || '')
+		// Don't sanitize - return as-is (it's typically JSON)
+		return progress.data?.scorm_content || ''
 	} else if (key === 'cmi.suspend_data') {
-		return sanitizeInput(progress.data?.scorm_content || '')
+		// Don't sanitize - return as-is (it's typically JSON)
+		return progress.data?.scorm_content || ''
 	} else if (key === 'cmi.core.score.raw') {
 		return progress.data?.scorm_raw_score || ''
 	}
@@ -207,8 +225,11 @@ const saveDataToLMS = (key, value) => {
 		return
 	}
 
-	// SECURITY FIX: Sanitize all input values
-	const sanitizedValue = sanitizeInput(value)
+	// Determine if this is JSON data (suspend_data typically contains JSON)
+	const isJSONData = key === 'cmi.suspend_data' || key === 'cmi.launch_data'
+
+	// SECURITY FIX: Sanitize input values (preserve JSON structure for JSON data)
+	const sanitizedValue = sanitizeInput(value, isJSONData)
 
 	if (key === 'cmi.core.lesson_status') {
 
