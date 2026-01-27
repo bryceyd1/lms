@@ -168,19 +168,42 @@ const getDataFromLMS = (key) => {
 		return ''
 	}
 
+	let value = ''
+
 	if (key === 'cmi.core.lesson_status') {
-		return progress.data?.status === 'Complete' ? 'passed' : 'incomplete'
+		value = progress.data?.status === 'Complete' ? 'passed' : 'incomplete'
+		console.log(`GET ${key} = "${value}" (from progress.data.status: "${progress.data?.status}")`)
+		return value
 	} else if (key === 'cmi.core.lesson_mode') {
-		return 'normal'
+		value = 'normal'
+		console.log(`GET ${key} = "${value}"`)
+		return value
 	} else if (key === 'cmi.launch_data') {
 		// Don't sanitize - return as-is (it's typically JSON)
-		return progress.data?.scorm_content || ''
+		value = progress.data?.scorm_content || ''
+		console.log(`GET ${key} = "${value.substring(0, 100)}${value.length > 100 ? '...' : ''}" (length: ${value.length})`)
+		return value
 	} else if (key === 'cmi.suspend_data') {
 		// Don't sanitize - return as-is (it's typically JSON)
-		return progress.data?.scorm_content || ''
+		value = progress.data?.scorm_content || ''
+		console.log(`GET ${key} = "${value.substring(0, 100)}${value.length > 100 ? '...' : ''}" (length: ${value.length})`)
+		if (value) {
+			// Try to parse and show readable JSON
+			try {
+				const parsed = JSON.parse(value)
+				console.log(`GET ${key} parsed:`, parsed)
+			} catch (e) {
+				console.warn(`GET ${key} - value is not valid JSON:`, e.message)
+			}
+		}
+		return value
 	} else if (key === 'cmi.core.score.raw') {
-		return progress.data?.scorm_raw_score || ''
+		value = progress.data?.scorm_raw_score || ''
+		console.log(`GET ${key} = "${value}"`)
+		return value
 	}
+
+	console.log(`GET ${key} = "" (not handled)`)
 	return ''
 }
 
@@ -263,10 +286,29 @@ const saveDataToLMS = (key, value) => {
 }
 
 const saveProgress = (scormDetails = null) => {
+	// Debug: Check if lesson exists
+	if (!chapter.doc?.lessons || !chapter.doc.lessons[0]?.lesson) {
+		console.error('Cannot save progress: lesson data not available', {
+			chapter: chapter.doc,
+			lessons: chapter.doc?.lessons
+		})
+		return
+	}
+
+	console.log('Saving SCORM progress:', {
+		lesson: chapter.doc.lessons[0].lesson,
+		course: props.courseName,
+		scorm_details: scormDetails,
+	})
+
 	call('lms.lms.doctype.course_lesson.course_lesson.save_progress', {
 		lesson: chapter.doc.lessons[0].lesson,
 		course: props.courseName,
 		scorm_details: scormDetails,
+	}).then((response) => {
+		console.log('Progress saved successfully:', response)
+	}).catch((error) => {
+		console.error('Error saving progress:', error)
 	})
 }
 
@@ -285,6 +327,13 @@ const progress = createResource({
 		}
 	},
 	onSuccess(data) {
+		console.log('SCORM Progress data loaded:', {
+			status: data?.status,
+			scorm_content_length: data?.scorm_content?.length || 0,
+			scorm_content_preview: data?.scorm_content?.substring(0, 100),
+			scorm_raw_score: data?.scorm_raw_score,
+			full_data: data
+		})
 		readyToRender.value = true
 	},
 })
