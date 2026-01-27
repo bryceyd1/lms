@@ -30,6 +30,7 @@ class SCORMRenderer(BaseRenderer):
 			    "media-src 'self' data: blob: https:; "  # Allow all HTTPS media
 			    "connect-src 'self'; "		# Block external requests
 			    "font-src 'self' data:; "
+			    "frame-src 'self'; "  # Allow SCORM content to frame itself (e.g., blank.html)
 			    "object-src 'none'; "
 			    "base-uri 'self'; "
 			    "form-action 'self'; "

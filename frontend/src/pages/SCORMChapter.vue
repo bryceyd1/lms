@@ -12,12 +12,11 @@
 				user.data?.is_instructor)
 		"
 	>
-		<!-- SECURITY FIX: Add sandbox attribute to iframe -->
+		<!-- SCORM iframe - sandbox removed to allow SCORM API access from child frame -->
+		<!-- SCORM content needs to access parent window to find the SCORM API -->
 		<iframe
 			:src="chapter.doc.launch_file"
 			class="w-full h-[calc(100vh-3.00rem)]"
-			sandbox="allow-scripts allow-same-origin"
-			referrerpolicy="no-referrer"
 			loading="lazy"
 		/>
 	</div>
