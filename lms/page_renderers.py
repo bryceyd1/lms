@@ -24,13 +24,13 @@ class SCORMRenderer(BaseRenderer):
 			# Add Content Security Policy
 			response.headers['Content-Security-Policy'] = (
 			    "default-src 'self'; "
-			    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "  # SCORM needs eval
-			    "style-src 'self' 'unsafe-inline'; "
-			    "img-src 'self' data: blob: https:; "  # Allow images over HTTPS
-			    "media-src 'self' data: blob: https:; "  # Allow all HTTPS media
-			    "connect-src 'self' blob:; "  # Allow blob URLs for Safari video loading
-			    "font-src 'self' data:; "
-			    "frame-src 'self'; "  # Allow SCORM content to frame itself (e.g., blank.html)
+			    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+			    "style-src 'self' 'unsafe-inline' https:; "
+			    "img-src 'self' data: blob: https:; "
+			    "media-src 'self' data: blob: https:; "
+			    "connect-src 'self' blob: https:; "
+			    "font-src 'self' data: https:; "
+			    "frame-src 'self' https:; "
 			    "object-src 'none'; "
 			    "base-uri 'self'; "
 			    "form-action 'self'; "
@@ -187,14 +187,44 @@ class SCORMRenderer(BaseRenderer):
 				frappe.throw("File type not allowed", frappe.PermissionError)
 				return None
 			
-			f = open(file_path, "rb")
-			response = Response(
-				wrap_file(frappe.local.request.environ, f), 
-				direct_passthrough=True
-			)
-			response.mimetype = mimetype
+			# Get file size
+			file_size = os.path.getsize(file_path)
 			
-			return response
+			# Check for Range header (required for Safari video playback)
+			range_header = frappe.local.request.environ.get('HTTP_RANGE')
+			
+			if range_header:
+				# Parse range header (format: "bytes=start-end")
+				byte_range = range_header.replace('bytes=', '').split('-')
+				start = int(byte_range[0]) if byte_range[0] else 0
+				end = int(byte_range[1]) if len(byte_range) > 1 and byte_range[1] else file_size - 1
+				length = end - start + 1
+				
+				# Open file and read the requested range
+				with open(file_path, 'rb') as f:
+					f.seek(start)
+					data = f.read(length)
+				
+				# Create 206 Partial Content response
+				response = Response(data, status=206, direct_passthrough=True)
+				response.headers['Content-Range'] = f'bytes {start}-{end}/{file_size}'
+				response.headers['Accept-Ranges'] = 'bytes'
+				response.headers['Content-Length'] = str(length)
+				response.mimetype = mimetype
+				
+				return response
+			else:
+				# Normal request without range - serve full file
+				f = open(file_path, "rb")
+				response = Response(
+					wrap_file(frappe.local.request.environ, f), 
+					direct_passthrough=True
+				)
+				response.headers['Accept-Ranges'] = 'bytes'  # Advertise Range support
+				response.headers['Content-Length'] = str(file_size)
+				response.mimetype = mimetype
+				
+				return response
 			
 		except Exception as e:
 			frappe.log_error(f"Error serving SCORM file: {str(e)}")
