@@ -7,6 +7,7 @@ import mimetypes
 import os
 
 import frappe
+from frappe.frappe.utils import response
 from frappe.website.page_renderers.base_renderer import BaseRenderer
 from werkzeug.wrappers import Response
 from werkzeug.wsgi import wrap_file
@@ -28,7 +29,7 @@ class SCORMRenderer(BaseRenderer):
 			    "style-src 'self' 'unsafe-inline'; "
 			    "img-src 'self' data: blob: https:; "  # Allow images over HTTPS
 			    "media-src 'self' data: blob: https:; "  # Allow all HTTPS media
-			    "connect-src 'self'; "		# Block external requests
+			    "connect-src 'self' blob:; "  # Allow blob URLs for Safari video loading
 			    "font-src 'self' data:; "
 			    "frame-src 'self'; "  # Allow SCORM content to frame itself (e.g., blank.html)
 			    "object-src 'none'; "
