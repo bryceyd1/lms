@@ -7,7 +7,6 @@ import mimetypes
 import os
 
 import frappe
-from frappe.frappe.utils import response
 from frappe.website.page_renderers.base_renderer import BaseRenderer
 from werkzeug.wrappers import Response
 from werkzeug.wsgi import wrap_file
